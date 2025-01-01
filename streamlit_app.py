@@ -1,5 +1,6 @@
 import streamlit as st
 
-st.title('🎈 App Name')
+st.title('Diamonds Price Prediction')
 
-st.write('Hello world!')
+st.write('Upload your dataset here.')
+file = st.file_uploader('Choose a CSV file', 'csv')
