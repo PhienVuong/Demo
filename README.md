@@ -1,9 +1,9 @@
-# 📦 Streamlit App Starter Kit 
+# 📦 Demo Diamond Price Prediction
 ```
 ⬆️ (Replace above with your app's name)
 ```
 
-Description of the app ...
+Just a demo
 
 ## Demo App
 
