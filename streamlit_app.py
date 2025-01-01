@@ -19,8 +19,8 @@ from xgboost import XGBRegressor
 file = st.file_uploader('Choose a CSV file', 'csv')
 if file:
     data_df = pd.read_csv(file)
-    
-data_df = data_df.drop(["Unnamed: 0"], axis=1)
+    if "Unnamed: 0" in data_df.columns:
+        data_df = data_df.drop(["Unnamed: 0"], axis=1)   
 
 data_df = data_df.drop(data_df[data_df["x"]==0].index)
 data_df = data_df.drop(data_df[data_df["y"]==0].index)
