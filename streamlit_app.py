@@ -43,7 +43,21 @@ columns = ['cut','color','clarity']
 label_encoder = LabelEncoder()
 for col in columns:
     data1[col] = label_encoder.fit_transform(data1[col])
-data1.describe()
+data1.describe()data1 = data_df.copy()
+
+    # Kiểm tra và mã hóa các cột danh mục
+    columns = ['cut', 'color', 'clarity']
+    label_encoder = LabelEncoder()
+    for col in columns:
+        if col in data1.columns:
+            data1[col] = label_encoder.fit_transform(data1[col])
+        else:
+            st.warning(f"Column '{col}' not found in the dataset. Skipping encoding for this column.")
+
+    st.write("Dataset after preprocessing:")
+    st.write(data1.describe())
+else:
+    st.error("Please upload a valid CSV file.")
 
 cmap = sns.diverging_palette(205, 133, 63, as_cmap=True)
 cols = (["#682F2F", "#9E726F", "#D6B2B1", "#B9C0C9", "#9F8A78", "#F3AB60"])
