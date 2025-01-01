@@ -4,7 +4,7 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 
 # Load the trained model and scaler (adjust the file path as necessary)
-with open('https://github.com/PhienVuong/Demo/blob/master/diamond4.py', 'rb') as model_file:
+with open('https://github.com/PhienVuong/Demo/blob/master/diamond4.py', 'py') as model_file:
     model = pickle.load(model_file)
 
 # Load the scaler used during training (if applicable)
