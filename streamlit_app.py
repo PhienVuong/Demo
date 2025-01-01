@@ -58,7 +58,8 @@ columns = ['cut','color','clarity']
 label_encoder = LabelEncoder()
 for col in columns:
     data1[col] = label_encoder.fit_transform(data1[col])
-data1.describe()data1 = data_df.copy()
+data1 = data_df.copy()
+    st.write(data1.describe())
 
     # Kiểm tra và mã hóa các cột danh mục
     columns = ['cut', 'color', 'clarity']
