@@ -1,71 +1,84 @@
 import streamlit as st
 import pandas as pd
-import joblib
-from sklearn.preprocessing import StandardScaler
 import numpy as np
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestRegressor
 
-# Load the trained machine learning model (make sure the model is saved as a .pkl file)
-model = joblib.load('diamond_price_model.pkl')
+# App title
+st.title("Diamonds Price Prediction App 💎")
 
-# If your model requires scaling (like using StandardScaler), load it
-scaler = joblib.load('scaler.pkl')  # Optional, depends on your model's requirements
+# File uploader
+file = st.file_uploader("Upload a CSV file containing diamond data", type="csv")
 
-def predict_price(df):
-    """
-    This function takes a dataframe and returns the predicted price for each diamond.
-    It assumes the model requires preprocessed data (e.g., scaling).
-    """
-    # If the model requires scaling, scale the features accordingly
-    if scaler:
-        df_scaled = scaler.transform(df)
+if file:
+    # Load dataset
+    data_df = pd.read_csv(file)
+
+    # Show uploaded dataset
+    st.write("Uploaded Dataset Preview:")
+    st.dataframe(data_df.head())
+
+    # Clean the dataset
+    if "Unnamed: 0" in data_df.columns:
+        data_df = data_df.drop(["Unnamed: 0"], axis=1)
+
+    data_df = data_df.drop(data_df[data_df["x"] == 0].index)
+    data_df = data_df.drop(data_df[data_df["y"] == 0].index)
+    data_df = data_df.drop(data_df[data_df["z"] == 0].index)
+    data_df = data_df[(data_df["depth"] < 75) & (data_df["depth"] > 45)]
+    data_df = data_df[(data_df["table"] < 80) & (data_df["table"] > 40)]
+    data_df = data_df[(data_df["x"] < 40)]
+    data_df = data_df[(data_df["y"] < 40)]
+    data_df = data_df[(data_df["z"] < 40) & (data_df["z"] > 2)]
+
+    st.write("Cleaned Dataset Preview:")
+    st.dataframe(data_df.head())
+
+    # Process dataset
+    data1 = data_df.copy()
+
+    # Encode categorical columns
+    categorical_columns = ["cut", "color", "clarity"]
+    label_encoder = LabelEncoder()
+    for col in categorical_columns:
+        if col in data1.columns:
+            data1[col] = label_encoder.fit_transform(data1[col])
+        else:
+            st.warning(f"Column '{col}' not found in the dataset. Skipping encoding for this column.")
+
+    # Check if 'price' column exists
+    if "price" not in data1.columns:
+        st.error("The dataset must contain a 'price' column for training the model.")
     else:
-        df_scaled = df  # If no scaling is needed
-    
-    # Make predictions using the model
-    predictions = model.predict(df_scaled)
-    return predictions
+        # Define independent (X) and dependent (y) variables
+        X = data1.drop(["price"], axis=1)
+        y = data1["price"]
 
-# Streamlit App Interface
-def main():
-    st.title('Diamond Price Prediction App')
-    st.write("Upload a CSV file containing the diamond attributes (like carat, cut, color, clarity, etc.) and get predicted prices.")
+        # Split the data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # File uploader widget to upload a CSV
-    uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
-    
-    if uploaded_file is not None:
-        try:
-            # Read the uploaded CSV file into a pandas DataFrame
-            df = pd.read_csv(uploaded_file)
+        # Build a model pipeline
+        pipeline_rf = Pipeline([("scaler", StandardScaler()), ("rf", RandomForestRegressor(random_state=42))])
 
-            # Show a preview of the data
-            st.write("Preview of your uploaded data:")
-            st.write(df.head())
+        # Train the model
+        pipeline_rf.fit(X_train, y_train)
 
-            # Check if the required columns exist in the DataFrame
-            required_columns = ['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z']
-            if all(col in df.columns for col in required_columns):
-                # Handle missing values if necessary (you can improve this based on your model's needs)
-                if df.isnull().sum().any():
-                    st.warning("Your data contains missing values. They will be handled with imputation or removed if necessary.")
+        # Predict prices for the entire dataset
+        data1["predicted_price"] = pipeline_rf.predict(X)
 
-                # Predict prices using the model
-                predictions = predict_price(df[required_columns])
+        # Show the table with predicted prices
+        st.subheader("Dataset with Predicted Prices:")
+        st.dataframe(data1[["price", "predicted_price"]].head())
 
-                # Add the predictions as a new column in the dataframe
-                df['Predicted Price'] = predictions
-
-                # Display the dataframe with the predicted prices
-                st.write("Predicted Diamond Prices:")
-                st.write(df)
-
-            else:
-                st.error(f"The uploaded file is missing required columns. Expected columns: {required_columns}")
-
-        except Exception as e:
-            st.error(f"An error occurred while processing the file: {e}")
-    else:
-        st.info("Please upload a CSV file to predict diamond prices.")
-
-if __name__ == '__main__':
-    main()
+        # Allow users to download the table
+        csv = data1.to_csv(index=False)
+        st.download_button(
+            label="Download Predicted Prices as CSV",
+            data=csv,
+            file_name="predicted_prices.csv",
+            mime="text/csv"
+        )
+else:
+    st.info("Please upload a CSV file to begin.")
