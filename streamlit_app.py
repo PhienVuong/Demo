@@ -8,6 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import cross_val_score
 
 from sklearn.linear_model import LinearRegression
 from sklearn. linear_model import Lasso
@@ -36,6 +37,20 @@ if file:
 
     st.write("Dataset after cleaning:")
     st.write(data_df.describe())
+
+    data1 = data_df.copy()
+
+    # Encode categorical columns
+    columns = ['cut', 'color', 'clarity']
+    label_encoder = LabelEncoder()
+    for col in columns:
+        if col in data1.columns:
+            data1[col] = label_encoder.fit_transform(data1[col])
+        else:
+            st.warning(f"Column '{col}' not found in the dataset. Skipping encoding for this column.")
+
+    st.write("Dataset after preprocessing:")
+    st.write(data1.describe())
 else:
     st.error("Please upload a valid CSV file.")
 
