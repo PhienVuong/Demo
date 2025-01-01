@@ -18,7 +18,6 @@ from xgboost import XGBRegressor
 
 file = st.file_uploader('Choose a CSV file', 'csv')
 if file:
-    data = pd.read_csv(file)
     data_df = pd.read_csv(file)
     
 data_df = data_df.drop(["Unnamed: 0"], axis=1)
