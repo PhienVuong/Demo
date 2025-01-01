@@ -3,29 +3,35 @@ import streamlit as st
 st.title('Diamonds Price Prediction')
 
 #st.write('Upload your dataset here.')
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import cross_val_score
-
-from sklearn.linear_model import LinearRegression
-from sklearn. linear_model import Lasso
+from sklearn.linear_model import LinearRegression, Lasso
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from xgboost import XGBRegressor
 
-file = st.file_uploader('Choose a CSV file', 'csv')
+# App title
+st.title("Diamonds Price Prediction")
+
+# File uploader
+file = st.file_uploader("Choose a CSV file", type="csv")
+
 if file:
+    # Load dataset
     data_df = pd.read_csv(file)
 
-    # Drop 'Unnamed: 0' column if it exists
+    # Clean the dataset
     if "Unnamed: 0" in data_df.columns:
         data_df = data_df.drop(["Unnamed: 0"], axis=1)
 
-    # Drop invalid rows
     data_df = data_df.drop(data_df[data_df["x"] == 0].index)
     data_df = data_df.drop(data_df[data_df["y"] == 0].index)
     data_df = data_df.drop(data_df[data_df["z"] == 0].index)
@@ -38,10 +44,11 @@ if file:
     st.write("Dataset after cleaning:")
     st.write(data_df.describe())
 
+    # Copy dataset for further processing
     data1 = data_df.copy()
 
     # Encode categorical columns
-    columns = ['cut', 'color', 'clarity']
+    columns = ["cut", "color", "clarity"]
     label_encoder = LabelEncoder()
     for col in columns:
         if col in data1.columns:
@@ -51,83 +58,55 @@ if file:
 
     st.write("Dataset after preprocessing:")
     st.write(data1.describe())
+
+    # Correlation heatmap
+    st.subheader("Correlation Heatmap")
+    corrmat = data1.corr()
+    plt.figure(figsize=(15, 12))
+    sns.heatmap(corrmat, cmap="coolwarm", annot=True)
+    st.pyplot(plt)
+
+    # Splitting the dataset
+    X = data1.drop(["price"], axis=1)
+    y = data1["price"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=25)
+
+    # Model pipelines
+    pipeline_lr = Pipeline([("scaler", StandardScaler()), ("lr", LinearRegression())])
+    pipeline_lasso = Pipeline([("scaler", StandardScaler()), ("lasso", Lasso())])
+    pipeline_dt = Pipeline([("scaler", StandardScaler()), ("dt", DecisionTreeRegressor())])
+    pipeline_rf = Pipeline([("scaler", StandardScaler()), ("rf", RandomForestRegressor())])
+    pipeline_kn = Pipeline([("scaler", StandardScaler()), ("kn", KNeighborsRegressor())])
+    pipeline_xgb = Pipeline([("scaler", StandardScaler()), ("xgb", XGBRegressor())])
+
+    pipelines = [pipeline_lr, pipeline_lasso, pipeline_dt, pipeline_rf, pipeline_kn, pipeline_xgb]
+    pipeline_dict = {
+        0: "Linear Regression",
+        1: "Lasso",
+        2: "Decision Tree",
+        3: "Random Forest",
+        4: "K-Neighbors",
+        5: "XGBoost",
+    }
+
+    # Train models and evaluate
+    st.subheader("Model Training")
+    for i, pipe in enumerate(pipelines):
+        pipe.fit(X_train, y_train)
+        score = cross_val_score(pipe, X_train, y_train, scoring="neg_root_mean_squared_error", cv=5)
+        st.write(f"{pipeline_dict[i]}: Mean RMSE = {-np.mean(score):.2f}")
+
+    # Prediction using XGBoost
+    pred = pipeline_xgb.predict(X_test)
+
+    # Visualization
+    st.subheader("Prediction Results")
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=y_test, y=pred, ax=ax)
+    ax.set_xlabel("Actual Price")
+    ax.set_ylabel("Predicted Price")
+    ax.set_title("Actual vs Predicted Prices")
+    st.pyplot(fig)
 else:
-    st.error("Please upload a valid CSV file.")
+    st.warning("Please upload a CSV file.")
 
-columns = ['cut','color','clarity']
-label_encoder = LabelEncoder()
-for col in columns:
-    data1[col] = label_encoder.fit_transform(data1[col])
-data1 = data_df.copy()
-    st.write(data1.describe())
-
-    # Kiểm tra và mã hóa các cột danh mục
-    columns = ['cut', 'color', 'clarity']
-    label_encoder = LabelEncoder()
-    for col in columns:
-        if col in data1.columns:
-            data1[col] = label_encoder.fit_transform(data1[col])
-        else:
-            st.warning(f"Column '{col}' not found in the dataset. Skipping encoding for this column.")
-
-    st.write("Dataset after preprocessing:")
-    st.write(data1.describe())
-else:
-    st.error("Please upload a valid CSV file.")
-
-cmap = sns.diverging_palette(205, 133, 63, as_cmap=True)
-cols = (["#682F2F", "#9E726F", "#D6B2B1", "#B9C0C9", "#9F8A78", "#F3AB60"])
-corrmat= data1.corr()
-f, ax = plt.subplots(figsize=(15,12))
-sns.heatmap(corrmat,cmap=cols,annot=True)
-plt.title('Correlation Heatmap of Diamonds Dataset')
-plt.xticks(rotation=45)
-
-# MODEL BUILDING
-# Defining the independent and dependent variables
-X= data1.drop(["price"],axis =1)
-y= data1["price"]
-X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.20, random_state=25)
-
-# Building pipelins of standard scaler and model for varios regressors.
-pipeline_lr=Pipeline([("scalar1",StandardScaler()), ("lr",LinearRegression())])
-pipeline_lasso=Pipeline([("scalar2", StandardScaler()), ("lasso",Lasso())])
-pipeline_dt=Pipeline([("scalar3",StandardScaler()), ("dt",DecisionTreeRegressor())])
-pipeline_rf=Pipeline([("scalar4",StandardScaler()), ("rf",RandomForestRegressor())])
-pipeline_kn=Pipeline([("scalar5",StandardScaler()), ("kn",KNeighborsRegressor())])
-pipeline_xgb=Pipeline([("scalar6",StandardScaler()), ("xgb",XGBRegressor())])
-
-# List of all the pipelines
-pipelines = [pipeline_lr, pipeline_lasso, pipeline_dt, pipeline_rf, pipeline_kn, pipeline_xgb]
-
-# Dictionary of pipelines and model types for ease of reference
-pipeline_dict = {0: "LinearRegression", 1: "Lasso", 2: "DecisionTree", 3: "RandomForest",4: "KNeighbors", 5: "XGBRegressor"}
-
-# Fit the pipelines
-for pipe in pipelines:
-    pipe.fit(X_train, y_train)
-    
-cv_results_rms = []
-for i, model in enumerate(pipelines):
-    cv_score = cross_val_score(model, X_train,y_train,scoring="neg_root_mean_squared_error", cv=12)
-    cv_results_rms.append(cv_score)
-
-# Model prediction on test data with XGBClassifier which gave us the least RMSE 
-pred = pipeline_xgb.predict(X_test)
-
-def Linear(X,y):
-    real_price = np.array(X)
-    predicted_price = np.array(y)
-    sns.scatterplot(x=real_price, y=predicted_price, palette = 'viridis')
-    model = LinearRegression()
-    model.fit(real_price.reshape(-1,1), predicted_price)
-    # plt.scatter(real_price, predicted_price, color='blue')
-    predicted_line = model.predict(real_price.reshape(-1,1))
-    plt.plot(real_price, predicted_line, color = 'red')
-
-# Draw a scatter chart
-Linear(y_test, pred)
-plt.xlabel('Real price')
-plt.ylabel('Predicted')
-plt.title('Compare')
-plt.show()
