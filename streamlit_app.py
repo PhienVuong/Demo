@@ -10,19 +10,18 @@ from sklearn.ensemble import RandomForestRegressor
 st.title("Diamonds Price Prediction App 💎")
 
 # File uploader
-file = st.file_uploader("Upload a CSV file containing diamond data", type="csv")
+#file = st.file_uploader("Upload a CSV file containing diamond data", type="csv")
 
-if file:
-    # Load dataset
-    data_df = pd.read_csv(file)
+# Load dataset
+data_df = pd.read_csv('https://github.com/PhienVuong/Demo/blob/master/diamonds.csv')
 
-    # Show uploaded dataset
-    st.write("Uploaded Dataset Preview:")
-    st.dataframe(data_df.head())
+# Show uploaded dataset
+st.write("Uploaded Dataset Preview:")
+st.dataframe(data_df.head())
 
-    # Clean the dataset
-    if "Unnamed: 0" in data_df.columns:
-        data_df = data_df.drop(["Unnamed: 0"], axis=1)
+# Clean the dataset
+if "Unnamed: 0" in data_df.columns:
+data_df = data_df.drop(["Unnamed: 0"], axis=1)
 
     data_df = data_df.drop(data_df[data_df["x"] == 0].index)
     data_df = data_df.drop(data_df[data_df["y"] == 0].index)
@@ -82,3 +81,6 @@ if file:
         )
 else:
     st.info("Please upload a CSV file to begin.")
+
+# File uploader
+file = st.file_uploader("Upload a CSV file containing diamond data", type="csv")
